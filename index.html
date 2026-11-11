@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0a1a25">
+  <meta name="description" content="Contador individual de repetições do MURPH TEKOÁ 2027. Registre +5 ou +10, desfaça e refaça marcações e acompanhe o tempo.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <title>MURPH TEKOÁ 2027</title>
+  <style>
+    :root { color-scheme:dark; --bg:#0a1a25; --panel:#142c39; --panel2:#1b3543; --border:#35505d; --ink:#f4f7f4; --muted:#adbfca; --lime:#c8ed59; --amber:#f6c973; --radius:18px; }
+    * { box-sizing:border-box; }
+    html { -webkit-text-size-adjust:100%; }
+    body { margin:0; min-height:100vh; background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    button { font:inherit; cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+    button:disabled { opacity:.36; cursor:not-allowed; }
+    button:focus-visible, a:focus-visible { outline:3px solid var(--lime); outline-offset:4px; }
+    .app { max-width:560px; margin:0 auto; padding:25px 16px calc(36px + env(safe-area-inset-bottom)); }
+    .top { text-align:center; padding:6px 0 18px; }
+    .eyebrow { font-size:11px; font-weight:800; letter-spacing:.24em; color:var(--lime); }
+    h1 { font-size:clamp(28px,7vw,42px); line-height:1.04; letter-spacing:-.045em; margin:7px 0 5px; font-weight:900; }
+    h1 span { color:var(--lime); }
+    .sub { font-size:12px; color:var(--muted); letter-spacing:.09em; font-weight:700; }
+    .timer { display:flex; align-items:center; justify-content:space-between; gap:14px; border-radius:var(--radius); background:var(--panel); border:1px solid var(--border); padding:17px 17px; margin-bottom:13px; }
+    .timer-title { color:var(--muted); font-size:11px; letter-spacing:.12em; font-weight:800; margin-bottom:3px; }
+    .time { display:block; font-weight:850; font-size:34px; letter-spacing:-.04em; font-variant-numeric:tabular-nums; line-height:1; white-space:nowrap; }
+    .timer-control { background:var(--lime); border:0; color:#14200d; font-size:14px; font-weight:850; border-radius:11px; min-width:112px; min-height:50px; padding:11px 14px; }
+    .timer-control.running { background:transparent; border:1px solid #69858f; color:var(--ink); }
+    .history { position:sticky; top:0; z-index:5; padding:9px 0; background:var(--bg); display:flex; gap:10px; }
+    .history button { flex:1; height:50px; color:var(--ink); background:#213b49; border:1px solid var(--border); border-radius:12px; font-weight:800; font-size:15px; }
+    .history button:disabled { opacity:.33; }
+    .feedback { min-height:19px; color:var(--muted); font-size:12px; text-align:center; padding:2px 0 11px; }
+    .feedback strong { color:var(--lime); }
+    .run { display:flex; align-items:center; justify-content:space-between; gap:12px; background:transparent; border:1px solid var(--border); border-radius:15px; padding:12px 13px; margin:2px 0 14px; width:100%; text-align:left; color:var(--ink); }
+    .run[data-done="true"] { background:#203f36; border-color:#476c54; }
+    .run .run-kicker { color:var(--muted); font-size:10px; font-weight:800; letter-spacing:.1em; margin-bottom:3px; }
+    .run .run-name { font-weight:850; letter-spacing:.025em; font-size:15px; }
+    .run .run-check { flex-shrink:0; display:grid; place-items:center; width:45px; height:45px; border-radius:12px; font-size:24px; font-weight:800; border:2px solid var(--border); color:var(--muted); }
+    .run[data-done="true"] .run-check { background:var(--lime); border-color:var(--lime); color:#10240b; }
+    .exercise { background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:18px 16px 16px; margin-bottom:13px; }
+    .exercise-head { display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:15px; }
+    .exercise-name { font-size:17px; font-weight:900; letter-spacing:-.018em; }
+    .exercise-count { white-space:nowrap; font-variant-numeric:tabular-nums; font-size:20px; font-weight:900; }
+    .exercise-count small { font-weight:650; font-size:14px; color:var(--muted); }
+    .progress { width:100%; height:9px; background:#314956; border-radius:99px; overflow:hidden; margin-bottom:16px; }
+    .fill { height:100%; width:0; background:var(--lime); border-radius:99px; transition:width 120ms ease-out; }
+    .buttons { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .add { height:62px; background:var(--lime); color:#17220e; font-size:22px; font-weight:900; border:0; border-radius:13px; }
+    .add.ten { background:#dff29d; }
+    .completed { color:var(--lime); font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; margin-top:10px; display:none; }
+    .exercise[data-done="true"] .completed {display:block;}
+    .summary { display:flex; justify-content:space-between; align-items:center; gap:12px; border-top:1px solid var(--border); padding:17px 2px 12px; margin-top:2px; }
+    .summary-label { color:var(--muted); font-size:13px; font-weight:800; letter-spacing:.03em; }
+    .summary-num { font-size:26px; font-weight:900; font-variant-numeric:tabular-nums; }
+    .summary-num span { color:var(--muted); font-size:17px; }
+    .all-done { display:none; background:#203d32; border:1px solid #4a7656; color:#e9f7d0; border-radius:14px; padding:14px 16px; font-weight:750; text-align:center; margin:10px 0 5px; }
+    .all-done.show { display:block; }
+    .save-status { text-align:center; font-size:11px; color:var(--muted); line-height:1.5; margin:14px 4px 13px; }
+    .save-status.warning { color:var(--amber); }
+    .reset-wrap { text-align:center; padding:6px; }
+    .reset { border:0; background:none; color:var(--muted); font-size:12px; text-decoration:underline; padding:14px; }
+    dialog { max-width:min(360px,calc(100vw - 32px)); color:var(--ink); background:var(--panel); border:1px solid var(--border); border-radius:19px; padding:22px; }
+    dialog::backdrop { background:#000a; }
+    dialog h2 { margin:0 0 9px; font-size:22px; }
+    dialog p { color:var(--muted); line-height:1.55; font-size:14px; margin:0 0 18px; }
+    .dialog-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .dialog-actions button { border-radius:11px; min-height:49px; font-size:14px; font-weight:800; background:var(--panel2); border:1px solid var(--border); color:var(--ink); }
+    .dialog-actions .danger { color:#1b2016; background:var(--amber); border:0; }
+    @media(max-width:350px) { .app { padding-inline:11px; } .time { font-size:29px; } .exercise-name { font-size:15px; } .exercise-count { font-size:18px; } .timer-control { min-width:94px; } }
+    @media(prefers-reduced-motion:reduce) { .fill { transition:none; } }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="top">
+      <div class="eyebrow">DESAFIO INDIVIDUAL</div>
+      <h1>MURPH <span>TEKOÁ</span> 2027</h1>
+      <div class="sub">1 MARCA = 5 REPETIÇÕES</div>
+    </header>
+
+    <section class="timer" aria-label="Cronômetro">
+      <div>
+        <div class="timer-title">TEMPO DO TREINO</div>
+        <output class="time" id="clock" aria-label="Tempo decorrido">00:00:00</output>
+      </div>
+      <button class="timer-control" id="timerButton" type="button">▶ Iniciar</button>
+    </section>
+
+    <nav class="history" aria-label="Histórico de marcações">
+      <button id="undo" type="button" disabled>↶ Desfazer</button>
+      <button id="redo" type="button" disabled>↷ Refazer</button>
+    </nav>
+    <div class="feedback" id="feedback" role="status" aria-live="polite">Toque para registrar suas repetições.</div>
+
+    <button class="run" id="run0" type="button" aria-pressed="false" data-done="false">
+      <div><div class="run-kicker">ETAPA INICIAL</div><div class="run-name">CORRIDA 1 · 1,6 KM</div></div>
+      <span class="run-check" aria-hidden="true">○</span>
+    </button>
+
+    <section class="exercise" id="exercise0" data-done="false" aria-label="Pull Up">
+      <div class="exercise-head"><span class="exercise-name">PULL UP</span><span class="exercise-count"><output id="count0">0</output> <small>/ 100</small></span></div>
+      <div class="progress" role="progressbar" aria-label="Progresso de Pull Up" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill" id="fill0"></div></div>
+      <div class="buttons"><button class="add" data-ex="0" data-amount="5" type="button">+5</button><button class="add ten" data-ex="0" data-amount="10" type="button">+10</button></div>
+      <div class="completed">✓ Concluído</div>
+    </section>
+
+    <section class="exercise" id="exercise1" data-done="false" aria-label="Push Up flexão">
+      <div class="exercise-head"><span class="exercise-name">PUSH UP (FLEXÃO)</span><span class="exercise-count"><output id="count1">0</output> <small>/ 200</small></span></div>
+      <div class="progress" role="progressbar" aria-label="Progresso de Push Up" aria-valuemin="0" aria-valuemax="200" aria-valuenow="0"><div class="fill" id="fill1"></div></div>
+      <div class="buttons"><button class="add" data-ex="1" data-amount="5" type="button">+5</button><button class="add ten" data-ex="1" data-amount="10" type="button">+10</button></div>
+      <div class="completed">✓ Concluído</div>
+    </section>
+
+    <section class="exercise" id="exercise2" data-done="false" aria-label="Squat">
+      <div class="exercise-head"><span class="exercise-name">SQUAT</span><span class="exercise-count"><output id="count2">0</output> <small>/ 300</small></span></div>
+      <div class="progress" role="progressbar" aria-label="Progresso de Squat" aria-valuemin="0" aria-valuemax="300" aria-valuenow="0"><div class="fill" id="fill2"></div></div>
+      <div class="buttons"><button class="add" data-ex="2" data-amount="5" type="button">+5</button><button class="add ten" data-ex="2" data-amount="10" type="button">+10</button></div>
+      <div class="completed">✓ Concluído</div>
+    </section>
+
+    <button class="run" id="run1" type="button" aria-pressed="false" data-done="false">
+      <div><div class="run-kicker">ETAPA FINAL</div><div class="run-name">CORRIDA 2 · 1,6 KM</div></div>
+      <span class="run-check" aria-hidden="true">○</span>
+    </button>
+
+    <section class="summary" aria-label="Total de repetições"><span class="summary-label">TOTAL DE REPETIÇÕES</span><strong class="summary-num"><output id="total">0</output> <span>/ 600</span></strong></section>
+    <div id="allDone" class="all-done" role="status">✓ Todas as etapas marcadas. Parabéns!</div>
+    <p id="saveStatus" class="save-status">As marcações são salvas automaticamente neste navegador.</p>
+    <div class="reset-wrap"><button class="reset" id="reset" type="button">Recomeçar treino (apagar tudo)</button></div>
+  </main>
+
+  <dialog id="confirmReset" aria-labelledby="resetTitle">
+    <h2 id="resetTitle">Recomeçar treino?</h2>
+    <p>Isso apaga as repetições, as corridas, o histórico de Desfazer/Refazer e o cronômetro salvos neste celular.</p>
+    <div class="dialog-actions"><button id="cancelReset" type="button">Cancelar</button><button class="danger" id="acceptReset" type="button">Apagar tudo</button></div>
+  </dialog>
+
+  <script>
+  (() => {
+    'use strict';
+    const KEY = 'murph-tekoa-2027-v1';
+    const names = ['PULL UP','PUSH UP (FLEXÃO)','SQUAT'];
+    const max = [100,200,300];
+    const initialSnapshot = () => ({reps:[0,0,0],runs:[false,false],label:'Início'});
+    const freshState = () => ({history:[initialSnapshot()],cursor:0,timer:{elapsed:0,startedAt:null,running:false}});
+    let storageOK = true;
+
+    const byId = id => document.getElementById(id);
+    const live = () => state.history[state.cursor];
+    const validSnapshot = s => s && Array.isArray(s.reps) && s.reps.length === 3 && s.reps.every((n,i)=> Number.isInteger(n) && n>=0 && n<=max[i] && n%5===0) && Array.isArray(s.runs) && s.runs.length===2 && s.runs.every(x=>typeof x === 'boolean') && typeof s.label === 'string';
+    let state = load();
+    function load() {
+      try {
+        const raw = localStorage.getItem(KEY);
+        if (!raw) return freshState();
+        const parsed = JSON.parse(raw);
+        if (!parsed || !Array.isArray(parsed.history) || parsed.history.length===0 || parsed.history.length>3000 || !parsed.history.every(validSnapshot) || !Number.isInteger(parsed.cursor) || parsed.cursor<0 || parsed.cursor>=parsed.history.length || !parsed.timer || !Number.isFinite(parsed.timer.elapsed) || parsed.timer.elapsed<0 || (parsed.timer.startedAt!==null && !Number.isFinite(parsed.timer.startedAt)) || typeof parsed.timer.running!=='boolean' || (parsed.timer.running && parsed.timer.startedAt===null)) return freshState();
+        return parsed;
+      } catch (e) { storageOK = false; return freshState(); }
+    }
+    function save() {
+      if (!storageOK) return;
+      try { localStorage.setItem(KEY,JSON.stringify(state)); }
+      catch (e) { storageOK = false; }
+    }
+    function register(snapshot) {
+      const history = state.history.slice(0,state.cursor+1);
+      history.push(snapshot);
+      // Max 1200 edits: avoids unbounded browser storage usage.
+      if (history.length>1200) history.shift();
+      state.history = history;
+      state.cursor = history.length - 1;
+      save(); render();
+    }
+    function add(index,amount) {
+      const cur = live();
+      if (cur.reps[index]+amount>max[index]) return;
+      const reps = [...cur.reps]; reps[index] += amount;
+      register({reps,runs:[...cur.runs],label:`+${amount} em ${names[index]}`});
+      if ('vibrate' in navigator) navigator.vibrate(12);
+    }
+    function setRun(index) {
+      const cur = live();
+      const runs = [...cur.runs]; runs[index] = !runs[index];
+      register({reps:[...cur.reps],runs,label:`Corrida ${index+1}: ${runs[index]?'concluída':'desmarcada'}`});
+    }
+    function undo() {if (state.cursor===0) return; state.cursor--; save(); render('Desfeito: '+state.history[state.cursor+1].label);}
+    function redo() {if (state.cursor===state.history.length-1) return; state.cursor++; save(); render('Refeito: '+live().label);}
+    function elapsed() {return state.timer.elapsed + (state.timer.running ? Math.max(0,Date.now()-state.timer.startedAt):0);}
+    function clockText(ms) {
+      const sec=Math.floor(ms/1000);
+      const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;
+      return [h,m,s].map(n=>String(n).padStart(2,'0')).join(':');
+    }
+    function renderClock() {byId('clock').textContent=clockText(elapsed());}
+    function timerToggle() {
+      if (state.timer.running) {state.timer.elapsed=elapsed();state.timer.startedAt=null;state.timer.running=false;}
+      else {state.timer.startedAt=Date.now();state.timer.running=true;}
+      save();render();
+    }
+    function render(message) {
+      const s=live();
+      s.reps.forEach((n,i)=>{
+        byId('count'+i).textContent=n;
+        byId('fill'+i).style.width=(n/max[i]*100)+'%';
+        const sec=byId('exercise'+i);
+        sec.dataset.done=(n===max[i]).toString();
+        sec.querySelector('[role="progressbar"]').setAttribute('aria-valuenow',n);
+        sec.querySelectorAll('[data-amount]').forEach(button=>{button.disabled=n+Number(button.dataset.amount)>max[i];button.setAttribute('aria-label',`Adicionar ${button.dataset.amount} repetições a ${names[i]}`);});
+      });
+      s.runs.forEach((yes,i)=>{
+        const btn=byId('run'+i);
+        btn.dataset.done=yes.toString();
+        btn.setAttribute('aria-pressed',yes.toString());
+        btn.querySelector('.run-check').textContent=yes?'✓':'○';
+        btn.setAttribute('aria-label',`Corrida ${i+1} de 1,6 km: ${yes?'concluída. Toque para desmarcar':'pendente. Toque para concluir'}`);
+      });
+      byId('undo').disabled=state.cursor===0;
+      byId('redo').disabled=state.cursor===state.history.length-1;
+      byId('total').textContent=s.reps.reduce((a,b)=>a+b,0);
+      byId('feedback').textContent=message || (state.cursor===0 ? 'Toque para registrar suas repetições.' : 'Última marcação: '+s.label);
+      byId('allDone').classList.toggle('show',s.reps.every((v,i)=>v===max[i]) && s.runs.every(Boolean));
+      const timerButton=byId('timerButton');
+      timerButton.textContent=state.timer.running?'Ⅱ Pausar':(state.timer.elapsed>0?'▶ Retomar':'▶ Iniciar');
+      timerButton.classList.toggle('running',state.timer.running);
+      byId('saveStatus').textContent=storageOK?'As marcações são salvas automaticamente neste navegador.':'Atenção: este navegador não permitiu salvar os dados. Evite fechar a página.';
+      byId('saveStatus').classList.toggle('warning',!storageOK);
+      renderClock();
+    }
+    document.querySelectorAll('[data-ex][data-amount]').forEach(btn=>btn.addEventListener('click',()=>add(Number(btn.dataset.ex),Number(btn.dataset.amount))));
+    [0,1].forEach(i=>byId('run'+i).addEventListener('click',()=>setRun(i)));
+    byId('undo').addEventListener('click',undo);
+    byId('redo').addEventListener('click',redo);
+    byId('timerButton').addEventListener('click',timerToggle);
+    byId('reset').addEventListener('click',()=>byId('confirmReset').showModal());
+    byId('cancelReset').addEventListener('click',()=>byId('confirmReset').close());
+    byId('acceptReset').addEventListener('click',()=>{state=freshState(); save();byId('confirmReset').close();render('Treino reiniciado.');window.scrollTo({top:0,behavior:'smooth'});});
+    document.addEventListener('visibilitychange',renderClock);
+    setInterval(()=>{if(state.timer.running)renderClock();},500);
+    render();
+    if ('serviceWorker' in navigator && (location.protocol==='https:' || location.hostname==='localhost' || location.hostname==='127.0.0.1')) {
+      window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
+    }
+  })();
+  </script>
+</body>
+</html>
